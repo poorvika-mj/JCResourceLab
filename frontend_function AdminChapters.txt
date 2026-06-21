@@ -1,0 +1,36 @@
+function AdminChapters({ chapters, setChapters }) {
+  const blank = { name:"", class:"10th", subject:"Mathematics", board:"State", order:1 };
+  const [form, setForm] = useState(blank);
+  const [adding, setAdding] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [filterSubj, setFilterSubj] = useState("All");
+  const [filterClass, setFilterClass] = useState("All");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  const allSubjects = ["All", ...Array.from(new Set(chapters.map(c => c.subject)))];
+  const allClasses  = ["All", ...Array.from(new Set(chapters.map(c => c.class)))];
+
+  const filtered = chapters.filter(c =>
+    (filterSubj==="All" || c.subject===filterSubj) &&
+    (filterClass==="All" || c.class===filterClass)
+  );
+
+  const save = () => {
+    if (!form.name) return;
+    if (editId) {
+      setChapters(prev => prev.map(x => x.id===editId ? {...form,id:editId} : x));
+      setEditId(null);
+    } else {
+      setChapters(prev => [...prev, {...form, id:Date.now()}]);
+    }
+    setAdding(false); setForm(blank);
+  };
+
+  return (
+    <>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12}}>
+        <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem"}}>Manage Chapters</h2>
+        <button className="btn btn-primary" onClick={() => { setAdding(true); setEditId(null); setForm(blank); }}>
+          <Icon name="plus" size={16}/>Add Chapter
+        </button>
+    

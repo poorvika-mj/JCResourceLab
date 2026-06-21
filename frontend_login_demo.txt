@@ -1,0 +1,6 @@
+v style={{background:"var(--blue-light)",border:"1px solid var(--navy)",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:"0.82rem",color:"var(--navy)",fontWeight:600}}>
+                    🔐 Admin access only. Demo: admin@jcrl.com / admin123
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Admin Email</label>
+                    <input className="form-input" type="email" pl

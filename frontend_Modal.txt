@@ -1,0 +1,46 @@
+function Modal({ modal, setModal, setLoggedIn, setIsAdmin, loggedIn }) {
+  const [tab, setTab] = useState(modal === "signup" ? "signup" : "login");
+  const [form, setForm] = useState({ email:"", password:"", confirmPassword:"", name:"", phone:"", feedback:"", rating:5 });
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const close = () => { setModal(null); setSubmitted(false); setError(""); setSuccess(""); };
+
+  useEffect(() => { setTab(modal === "signup" ? "signup" : "login"); setError(""); }, [modal]);
+
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (admin = false) => {
+    if (!form.email || !form.password) { setError("Please fill all fields"); return; }
+    setLoading(true); setError("");
+    try {
+      const d = await authAPI.login(form.email, form.password);
+      const isAdminUser = d.user && d.user.role === "admin";
+      setLoggedIn(true); setIsAdmin(isAdminUser); close();
+      // Notify lecturer via email
+      const subject = encodeURIComponent("JC Resource Lab - User Login");
+      const body = encodeURIComponent(
+        "A student just logged in to JC Resource Lab.\n\n" +
+        "Name: " + (d.user.name || "N/A") + "\n" +
+        "Email: " + d.user.email + "\n" +
+        "Phone: " + (d.user.phone || "N/A") + "\n" +
+        "Time: " + new Date().toLocaleString("en-IN")
+      );
+      window.open(`mailto:${LECTURER_EMAIL}?subject=${subject}&body=${body}`, "_blank");
+    } catch(e) {
+      setError(e.message || "Login failed. Please check your credentials.");
+    } finally { setLoading(false); }
+  };
+
+  const handleSignup = async () => {
+    if (!form.name || !form.email || !form.password || !form.confirmPassword) { setError("Please fill all fields"); return; }
+    if (form.password !== form.confirmPassword) { setError("Passwords do not match"); return; }
+    if (form.password.length < 6) { setError("Password must be at least 6 characters"); return; }
+    setLoading(true); setError("");
+    try {
+      const d = await authAPI.signup(form.name, form.email, form.password, form.phone);
+      setLoggedIn(true); setIsAdmin(false); close();
+      // Notify lecturer via email
+      const subject = encodeURIComponent("JC Resource Lab - New Student Registration");
+      const body = encodeURIComponent(
+        "A new student has r

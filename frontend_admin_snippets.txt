@@ -1,0 +1,185 @@
+--- function AdminPage idx 509657
+function AdminPage({ adminTab, setAdminTab, nav, goBack, goHome }) {
+  // ── Shared state across all admin tabs ─────────────────────────────────────
+  const [notes,    setNotes]    = useState(INIT_NOTES);
+  const [papers,   setPapers]   = useState(INIT_PAPERS);
+  const [practice, setPractice] = useState([]);
+  const [passing,  setPassing]  = useState([]);
+  const [modules,  setModules]  = useState([]);
+  const [chapters, setChapters] = useState(INIT_CHAPTERS);
+  const [videos,   setVideos]   = useState(INIT_VIDEOS);
+  const [students, setStudents] = useState(INIT_STUDENTS);
+  const [feedbacks,setFeedbacks]= useState(INIT_FEEDBACKS);
+  const [contactMsgs,setContactMsgs]= useState([]);
+
+  const allItems = [...notes, ...papers, ...practice, ...passing, ...modules]; // for recent uploads
+
+  const tabs = [
+    { key:"dashboard", icon:"home",    label:"Dashboard" },
+    { key:"chapters",  icon:"layers",  label:"Chapters",        count:chapters.length },
+    { key:"notes",     icon:"book",    label:"Notes",           count:notes.length },
+    { key:"papers",    icon:"file",    label:"Prev Year Papers", count:papers.length },
+    { key:"practice",  icon:"layers",  label:"Practice Papers",  count:practice.length },
+    { key:"passing",   icon:"award",   label:"Passing Package",  count:passing.length },
+    { key:"modules",   icon:"star",    label:"Worksheets",       count:modules.length },
+    { key:"videos",    icon:"video",   label:"Videos",          count:videos.length },
+    { ke
+
+--- const AdminPage idx -1
+--- function AdminContactMessages idx 564972
+function AdminContactMessages({ messages, setMessages }) {
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    setLoading(true);
+    contactAPI.list().then(d => { setMessages(d.messages || []); }).catch(()=>{}).finally(()=>setLoading(false));
+  }, []);
+  return (
+    <>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24}}>
+        <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.8rem"}}>Contact Messages</h2>
+        <span className="badge badge-blue">{messages.length} messages</span>
+      </div>
+      {loading && <p style={{textAlign:"center",color:"var(--text3)",padding:"20px 0"}}>Loading...</p>}
+      <div style={{display:"flex",flexDirection:"column",gap:16}}>
+        {messages.map((m,i) => (
+          <div key={m.id||i} className="card">
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:40,height:40,borderRadius:10,background:"linear-gradient(135deg,#1e3a6e,#122348)",border:"2px solid #c9a227",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700}}>
+                  {(m.name||"?").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{fontWeight:700}}>{m.name||"Anonymous"}</div>
+                  <div style={{fontSize:"0.78rem",color:"var(--text3
+
+--- function AdminFeedback idx 561801
+function AdminFeedback({ feedbacks, setFeedbacks }) {
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  return (
+    <>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24}}>
+        <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.8rem"}}>Student Feedback</h2>
+        <span className="badge badge-blue">{feedbacks.length} reviews</span>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:16}}>
+        {feedbacks.map((f,i) => (
+          <div key={f.id||i} className="card">
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:40,height:40,borderRadius:10,background:"linear-gradient(135deg,#1e3a6e,#122348)",border:"2px solid #c9a227",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700}}>{f.name.charAt(0)}</div>
+                <div><div style={{fontWeight:700}}>{f.name}</div><div style={{fontSize:"0.78rem",color:"var(--text3)"}}>{f.date}</div></div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{display:"flex",gap:2}}>
+                  {[1,2,3,4,5].map(n=><Icon key={n} name="star" size={14} style={{color:n<=f.rating?"#f59e0b":"var(--card-border)",fill:n<=f.rating?"#f59e0b":"none"}}/>)}
+                </div>
+          
+
+--- function AdminSubjects idx 560130
+function AdminSubjects() {
+  return (
+    <>
+      <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.8rem",marginBottom:24}}>Manage Subjects</h2>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24}}>
+        <div className="card">
+          <h3 style={{fontWeight:700,marginBottom:16}}>School — Classes 5–8</h3>
+          {SCHOOL_SUBJECTS_5_8.map((s,i) => (
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:i<SCHOOL_SUBJECTS_5_8.length-1?"1px solid var(--card-border)":"none"}}>
+              <Icon name="book" size={16} style={{color:"var(--accent)"}}/>
+              <span style={{flex:1,fontWeight:500,fontSize:"0.9rem"}}>{s}</span>
+              <button className="btn btn-ghost btn-icon" style={{width:32,height:32}}><Icon name="edit" size={14}/></button>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <h3 style={{fontWeight:700,marginBottom:16}}>College — Science</h3>
+          {Object.entries(SCIENCE_STREAMS).map(([stream,subjects]) => (
+            <div key={stream} style={{marginBottom:16}}>
+              <div style={{fontWeight:700,fontSize:"0.85rem",color:"var(--green)",marginBottom:8}}>{stream}</div>
+              {subjects.map(s => (
+                <div key={s} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",paddingLeft:12}}>
+                  <div style={{width:4,height:4,borderRadius:"50%",background:"var(--green)"}}/>
+            
+
+--- function AboutPage idx 497024
+function AboutPage({ nav, goBack, goHome }) {
+  return (
+    <div className="page">
+      <BackBar nav={nav} goBack={goBack} goHome={goHome}/>
+      <div className="page-header">
+        <div className="page-title">About JC Resource Lab</div>
+        <div className="page-subtitle">Dedicated to helping every student learn smarter and achieve academic excellence</div>
+      </div>
+
+      {/* Welcome Section */}
+      <div className="hero-banner" style={{marginBottom:40}}>
+        <div className="hero-content" style={{textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center"}}>
+          <div className="hero-title" style={{textAlign:"center"}}>Learn · <span style={{color:"#c9a227"}}>Practice</span> · Grow</div>
+          <div className="hero-sub" style={{textAlign:"center",maxWidth:560}}>Welcome to JC Resource Lab, an educational platform dedicated to helping students learn smarter and achieve academic excellence.</div>
+        </div>
+      </div>
+
+      {/* About Content from PDF */}
+      <div className="card" style={{marginBottom:28,lineHeight:1.8,borderLeft:"4px solid #c9a227"}}>
+        <p style={{color:"var(--text)",fontSize:"1rem",marginBottom:16}}>
+          Welcome to <strong>JC Resource Lab</strong>, a learning platform created to support students from <strong>Class 5 to 10</strong> (State / CBSE), <strong>1st PUC</strong>, <strong>2nd PUC</strong> (Science / Commerce) with quality notes, worksheets, quizzes, explanation videos, and exam resources.
+ 
+
+--- function ContactPage idx 504227
+function ContactPage({ nav, goBack, goHome }) {
+  const [form, setForm] = useState({ name:"", email:"", phone:"", message:"" });
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSend = async () => {
+    if (!form.message) { setError("Please enter a message"); return; }
+    setLoading(true); setError("");
+    try {
+      // Save to database so admin can view all messages
+      await contactAPI.send({ name: form.name||"Anonymous", email: form.email||"", phone: form.phone||"", message: form.message });
+      // Also open mailto so the message goes directly to the lecturer's email
+      const subject = encodeURIComponent("JC Resource Lab - Message from " + (form.name || "Student"));
+      const body = encodeURIComponent(
+        "Name: " + (form.name || "N/A") + "\n" +
+        "Email: " + (form.email || "N/A") + "\n" +
+        "Phone: " + (form.phone || "N/A") + "\n\n" +
+        "Message:\n" + form.message
+      );
+      window.location.href = `mailto:${LECTURER_EMAIL}?subject=${subject}&body=${body}`;
+      setSent(true);
+    } catch(e) {
+      setError(e.message || "Failed to send message. Please try again.");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="page">
+      <BackBar nav={nav} goBack={goBack} goHome={goHome}/>
+      <div className="page-header">
+        <div className="page-title">Contact Us</div>
+        <div className="page-subtitle">Get in
+
+--- function HomePage idx 469438
+function HomePage({ openPage, searchQuery, setSearchQuery }) {
+  return (
+    <div className="page">
+      {/* Hero */}
+      <div className="hero-banner">
+        <div className="hero-content" style={{textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center"}}>
+          <div style={{marginBottom:20}}>
+            <img src={LOGO_IMG} alt="JC Resource Lab" style={{width:100,height:100,objectFit:"contain",filter:"drop-shadow(0 4px 16px rgba(201,162,39,0.4))"}}/>
+          </div>
+          <div className="hero-title" style={{textAlign:"center"}}>Your complete<br/><span>learning resource</span><br/>hub</div>
+          <div className="hero-sub" style={{textAlign:"center",margin:"0 auto"}}>Access notes, papers, modules, and video lectures for School and College — all in one place.</div>
+          <div className="hero-stats" style={{justifyContent:"center"}}>
+            <div style={{textAlign:"center"}}><div className="hero-stat-num">500+</div><div className="hero-stat-label">Study Materials</div></div>
+            <div style={{textAlign:"center"}}><div className="hero-stat-num">20+</div><div className="hero-stat-label">Subjects</div></div>
+            <div style={{textAlign:"center"}}><div className="hero-stat-num">1000+</div><div className="hero-stat-label">Students</div></div>
+            <div style={{textAlign:"center"}}><div className="hero-stat-num">5★</div><div className="hero-stat-label">Rated</div></div>
+          </div>
+        </div>
+      </div>
+
+   
+

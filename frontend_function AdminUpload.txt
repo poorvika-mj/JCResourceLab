@@ -1,0 +1,31 @@
+function AdminUpload({ type, icon, color="#c9a227", items, setItems }) {
+  const blank = { title:"", class:"9th", subject:"Mathematics", board:"State", chapter:"", type };
+  const [form, setForm] = useState(blank);
+  const [adding, setAdding] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = React.useRef(null);
+
+  useEffect(() => {
+    resourcesAPI.list({type}).then(res => setItems(res.resources || [])).catch(() => {});
+  }, [type]);
+
+  const save = async () => {
+    if (!form.title) return;
+    setUploadError("");
+    if (editId) {
+      try {
+        const res = await resourcesAPI.update(editId, {title:form.title,class:form.class,subject:form.subject,board:form.board,chapter:form.chapter,type});
+        setItems(prev => prev.map(x => x.id===editId ? res.resource : x));
+        setEditId(null); setAdding(false); setForm(blank);
+      } catch(e) { setUploadError(e.message); }
+    } else {
+      if (!selectedFile) { setUploadError("Please select a file to upload."); return; }
+      setUploading(true);
+      try {
+        const meta = {title:form.title, class:form.class, subject:form.subject, board:form.board, chapter:form.chapter, type};
+        const res = await resourcesAPI

@@ -1,0 +1,24 @@
+tLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [nav, setNav] = useState([]); // breadcrumb stack
+  const [searchQuery, setSearchQuery] = useState("");
+  const [adminTab, setAdminTab] = useState("dashboard");
+
+  // splash
+  useEffect(() => {
+    const t1 = setTimeout(() => setSplashOut(true), 2800);
+    const t2 = setTimeout(() => setSplash(false), 3400);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
+  const navigate = (p, label) => {
+    setNav(prev => [...prev, { page, label }]);
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const goBack = () => {
+    if (nav.length === 0) return;
+    const prev = nav[nav.length - 1];
+    setNav(n => n.slice(0, -1));
+    setPage(prev.page);
+    window.scrollTo({ t

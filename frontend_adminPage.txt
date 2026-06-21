@@ -1,0 +1,35 @@
+function AdminPage({ adminTab, setAdminTab, nav, goBack, goHome }) {
+  // ── Shared state across all admin tabs ─────────────────────────────────────
+  const [notes,    setNotes]    = useState(INIT_NOTES);
+  const [papers,   setPapers]   = useState(INIT_PAPERS);
+  const [practice, setPractice] = useState([]);
+  const [passing,  setPassing]  = useState([]);
+  const [modules,  setModules]  = useState([]);
+  const [chapters, setChapters] = useState(INIT_CHAPTERS);
+  const [videos,   setVideos]   = useState(INIT_VIDEOS);
+  const [students, setStudents] = useState(INIT_STUDENTS);
+  const [feedbacks,setFeedbacks]= useState(INIT_FEEDBACKS);
+  const [contactMsgs,setContactMsgs]= useState([]);
+
+  const allItems = [...notes, ...papers, ...practice, ...passing, ...modules]; // for recent uploads
+
+  const tabs = [
+    { key:"dashboard", icon:"home",    label:"Dashboard" },
+    { key:"chapters",  icon:"layers",  label:"Chapters",        count:chapters.length },
+    { key:"notes",     icon:"book",    label:"Notes",           count:notes.length },
+    { key:"papers",    icon:"file",    label:"Prev Year Papers", count:papers.length },
+    { key:"practice",  icon:"layers",  label:"Practice Papers",  count:practice.length },
+    { key:"passing",   icon:"award",   label:"Passing Package",  count:passing.length },
+    { key:"modules",   icon:"star",    label:"Worksheets",       count:modules.length },
+    { key:"videos",    icon:"video",   label:"Videos",          count:videos.length },
+    { key:"subjects",  icon:"star",    label:"Subjects" },
+    { key:"students",  icon:"user",    label:"Students",        count:students.length },
+    { key:"feedback",  icon:"message", label:"Feedback",        count:feedbacks.length },
+    { key:"contact_msgs", icon:"mail", label:"Contact Messages", count:contactMsgs.length },
+  ];
+
+  return (
+    <div>
+      <div style={{background:"linear-gradient(135deg,#0f1e3d,#1e3a6e)",padding:"16px 20px",display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:40,height:40,background:"rgba(201,162,39,0.2)",border:"2px solid #c9a227",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <Icon name="shield" size

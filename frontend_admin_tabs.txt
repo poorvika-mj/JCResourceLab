@@ -1,0 +1,30 @@
+{{marginLeft:"auto"}} onClick={goHome}><Icon name="home" size={14}/>Home</button>
+      </div>
+      <div className="admin-layout">
+        <div className="admin-sidebar">
+          <div style={{padding:"16px 8px"}}>
+            {tabs.map(t => (
+              <div key={t.key} className={`admin-nav-item ${adminTab===t.key?"active":""}`} onClick={() => setAdminTab(t.key)}
+                style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <span style={{display:"flex",alignItems:"center",gap:8}}><Icon name={t.icon} size={18}/>{t.label}</span>
+                {t.count !== undefined && (
+                  <span style={{background:adminTab===t.key?"rgba(201,162,39,0.3)":"var(--bg3)",color:adminTab===t.key?"#c9a227":"var(--text3)",borderRadius:20,padding:"1px 8px",fontSize:"0.72rem",fontWeight:700}}>{t.count}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="admin-content">
+          {adminTab==="dashboard" && <AdminDashboard notes={notes} papers={papers} chapters={chapters} videos={videos} students={students} allItems={allItems} setNotes={setNotes} setPapers={setPapers} setAdminTab={setAdminTab}/>}
+          {adminTab==="chapters"  && <AdminChapters  chapters={chapters} setChapters={setChapters}/>}
+          {adminTab==="notes"     && <AdminUpload type="notes"       icon="book"   color="#6366f1" items={notes}    setItems={setNotes}/>}
+          {adminTab==="papers"    && <AdminUpload type="prev_papers" icon="file"   color="#f59e0b" items={papers}   setItems={setPapers}/>}
+          {adminTab==="practice"  && <AdminUpload type="practice"    icon="layers" color="#10b981" items={practice} setItems={setPractice}/>}
+          {adminTab==="passing"   && <AdminUpload type="passing"     icon="award"  color="#ec4899" items={passing}  setItems={setPassing}/>}
+          {adminTab==="modules"   && <AdminUpload type="modules"     icon="star"   color="#8b5cf6" items={modules}  setItems={setModules}/>}
+          {adminTab==="videos"    && <AdminVideos videos={videos} setVideos={setVideos}/>}
+          {adminTab==="subjects"  && <AdminSubjects/>}
+          {adminTab==="students"  && <AdminStudents students={students} setStudents={setStudents}/>}
+          {adminTab==="feedback"  && <AdminFeedback feedbacks={feedbacks} setFeedbacks={setFeedbacks}/>}
+          {adminTab==="contact_msgs" && <AdminContactMessages messages={contactMsgs} setMessages={setContactMsgs}/>}
+      

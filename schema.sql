@@ -7,6 +7,7 @@ create table if not exists users (
   name       text not null,
   email      text unique not null,
   phone      text,
+  approved   boolean not null default false,
   password   text not null,
   role       text not null default 'student',
   created_at timestamptz default now()

@@ -1,0 +1,31 @@
+function BackBar({ nav, goBack, goHome }) {
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24,flexWrap:"wrap"}}>
+      {nav.length > 0 && (
+        <button className="btn btn-secondary btn-sm" onClick={goBack}><Icon name="back" size={15}/>Back</button>
+      )}
+      <div className="breadcrumb">
+        <span className="breadcrumb-item" onClick={goHome}><Icon name="home" size={13}/> Home</span>
+        {nav.map((item, i) => (
+          <span key={i} style={{display:"flex",alignItems:"center",gap:8}}>
+            <span className="breadcrumb-sep">›</span>
+            <span className="breadcrumb-item" onClick={() => { /* simplified */ goBack(); }}>{item.label}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── HOME PAGE ────────────────────────────────────────────────────────────────
+function HomePage({ openPage, searchQuery, setSearchQuery }) {
+  return (
+    <div className="page">
+      {/* Hero */}
+      <div className="hero-banner">
+        <div className="hero-content" style={{textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center"}}>
+          <div style={{marginBottom:20}}>
+            <img src={LOGO_IMG} alt="JC Resource Lab" style={{width:100,height:100,objectFit:"contain",filter:"drop-shadow(0 4px 16px rgba(201,162,39,0.4))"}}/>
+          </div>
+          <div className="hero-title" style={{textAlign:"center"}}>Your complete<br/><span>learning resource</span><br/>hub</div>
+          <div 

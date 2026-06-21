@@ -29,6 +29,20 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Handle malformed JSON errors from body-parser so server doesn't crash
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    console.error('[API] Malformed JSON body:', err.message);
+    return res.status(400).json({ error: 'Invalid JSON body' });
+  }
+  // Some versions throw a SyntaxError instead
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error('[API] Malformed JSON SyntaxError:', err.message);
+    return res.status(400).json({ error: 'Invalid JSON body' });
+  }
+  next(err);
+});
+
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 // ── JWT helpers ───────────────────────────────────────────────────────────
@@ -56,20 +70,52 @@ function adminOnly(req, res, next) {
 
 // ── AUTH ──────────────────────────────────────────────────────────────────
 app.post("/api/auth/signup", async (req, res) => {
-  const { name, email, password, phone } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ error: "name, email, password required" });
-  if (password.length < 6) return res.status(400).json({ error: "Password min 6 characters" });
+  try {
+    console.log('[API] POST /api/auth/signup - body:', req.body);
+    const { name, email, password, phone } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ error: "name, email, password required" });
+    if (password.length < 6) return res.status(400).json({ error: "Password min 6 characters" });
 
-  const { data: existing } = await supabase.from("users").select("id").eq("email", email).maybeSingle();
-  if (existing) return res.status(409).json({ error: "Email already registered" });
+    const { data: existing, error: existingErr } = await supabase.from("users").select("id").eq("email", email).maybeSingle();
+    if (existing) return res.status(409).json({ error: "Email already registered" });
+    if (existingErr) console.warn('[API] existing check error:', existingErr.message || existingErr);
 
-  const hash = await bcrypt.hash(password, 10);
-  const { data: user, error } = await supabase
-    .from("users").insert({ name, email, phone: phone || null, password: hash, role: "student" })
-    .select("id,name,email,phone,role,created_at").single();
+    const hash = await bcrypt.hash(password, 10);
+    // New signups are created with approved=false so admin can review and approve.
+    // If the database schema does not have the `approved` column (older deployments),
+    // retry inserting without that field for backward-compatibility.
+    let user, err;
+    try {
+      const insertRes = await supabase
+        .from("users").insert({ name, email, phone: phone || null, password: hash, role: "student", approved: false })
+        .select("id,name,email,phone,role,approved,created_at").single();
+      user = insertRes.data;
+      err = insertRes.error;
+    } catch (e) {
+      err = e;
+    }
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.status(201).json({ token: signToken(user), user });
+    if (err) {
+      const msg = (err && err.message) ? String(err.message) : String(err || "");
+      console.warn('[API] signup insert error:', msg);
+      if (msg.toLowerCase().includes("approved") || msg.toLowerCase().includes("column")) {
+        const retry = await supabase.from("users").insert({ name, email, phone: phone || null, password: hash, role: "student" }).select("id,name,email,phone,role,created_at").single();
+        if (retry.error) {
+          console.error('[API] signup retry error:', retry.error);
+          return res.status(500).json({ error: retry.error.message });
+        }
+        user = retry.data;
+      } else {
+        console.error('[API] signup fatal error:', msg);
+        return res.status(500).json({ error: msg });
+      }
+    }
+
+    res.status(201).json({ token: signToken(user), user });
+  } catch (e) {
+    console.error('[API] Unexpected error in /api/auth/signup:', e);
+    res.status(500).json({ error: e.message || 'Internal server error' });
+  }
 });
 
 app.post("/api/auth/login", async (req, res) => {
@@ -82,6 +128,9 @@ app.post("/api/auth/login", async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.password)))
     return res.status(401).json({ error: "Invalid email or password" });
 
+  if (user.approved === false && user.role !== "admin")
+    return res.status(403).json({ error: "Account not approved by admin yet" });
+
   const { password: _pw, ...safeUser } = user;
   res.json({ token: signToken(safeUser), user: safeUser });
 });
@@ -91,6 +140,25 @@ app.get("/api/auth/me", authMiddleware, async (req, res) => {
     .select("id,name,email,phone,role,created_at").eq("id", req.user.id).single();
   if (!user) return res.status(404).json({ error: "Not found" });
   res.json({ user });
+});
+
+// Change password for authenticated users
+app.post("/api/auth/change-password", authMiddleware, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  if (!oldPassword || !newPassword) return res.status(400).json({ error: "oldPassword and newPassword required" });
+  if (newPassword.length < 6) return res.status(400).json({ error: "New password must be at least 6 characters" });
+
+  const { data: user } = await supabase.from("users")
+    .select("id,name,email,phone,role,password").eq("id", req.user.id).maybeSingle();
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  const ok = await bcrypt.compare(oldPassword, user.password || "");
+  if (!ok) return res.status(401).json({ error: "Old password is incorrect" });
+
+  const hash = await bcrypt.hash(newPassword, 10);
+  const { error } = await supabase.from("users").update({ password: hash }).eq("id", req.user.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ message: "Password changed" });
 });
 
 // ── RESOURCES ─────────────────────────────────────────────────────────────
@@ -281,7 +349,7 @@ app.delete("/api/contact/:id", authMiddleware, adminOnly, async (req, res) => {
 // ── STUDENTS ──────────────────────────────────────────────────────────────
 app.get("/api/students", authMiddleware, adminOnly, async (req, res) => {
   const { data, error } = await supabase.from("users")
-    .select("id,name,email,phone,role,created_at").eq("role","student")
+    .select("id,name,email,phone,role,approved,created_at").eq("role","student")
     .order("created_at", { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
   res.json({ students: data });
@@ -307,6 +375,13 @@ app.delete("/api/students/:id", authMiddleware, adminOnly, async (req, res) => {
   res.json({ message: "Deleted" });
 });
 
+// Approve a student account
+app.post("/api/students/:id/approve", authMiddleware, adminOnly, async (req, res) => {
+  const { error } = await supabase.from("users").update({ approved: true }).eq("id", req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ message: "Approved" });
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 //  FRONTEND — Serve the React app at GET /
 //  The JSX is decoded from frontend_b64.txt at startup and embedded in HTML
@@ -320,6 +395,16 @@ frontendJSX = frontendJSX
     'href={"mailto:" + m.email + "?subject=Re: Your message to JC Resource Lab"}')
   .replace('              </a>\n            </div>',
     '              </a>\n              <button type="button" onClick={() => deleteContactMessage(m.id)} className="btn btn-danger btn-sm" style={{display:"inline-flex",alignItems:"center",gap:6}}>\n                <Icon name="trash" size={14}/> Delete\n              </button>\n            </div>');
+  // Remove visible demo credentials text from frontend UI
+  frontendJSX = frontendJSX.replace('🔐 Admin access only. Demo: admin@jcrl.com / admin123', '🔐 Admin access only.');
+  // Replace displayed educator name with requested name
+  frontendJSX = frontendJSX.replace('Mr. Mohan Kumar', 'Mohan M Gowda');
+  frontendJSX = frontendJSX.replace('alt="Mr. Mohan Kumar - Educator, JC Resource Lab"', 'alt="Mohan M Gowda - Educator, JC Resource Lab"');
+  // Inject a Change Password button beside Sign Out (uses prompt for quick input)
+  frontendJSX = frontendJSX.replace(
+    '<button className="btn btn-secondary btn-sm" style={{width:"100%"}} onClick={() => { authAPI.logout(); setLoggedIn(false); setIsAdmin(false); setProfile(false); }}>Sign Out</button>',
+    '<><button className="btn btn-secondary btn-sm" style={{width:"100%",marginBottom:8}} onClick={async ()=>{const oldP=prompt("Enter current password"); if(!oldP) return; const newP=prompt("Enter new password (min 6 chars)"); if(!newP) return; try{ await authAPI.changePassword(oldP,newP); alert("Password changed successfully"); authAPI.logout(); setLoggedIn(false); setIsAdmin(false); setProfile(false);}catch(e){alert(e.message||e);} }}><Icon name="lock" size={14}/>Change Password</button><button className="btn btn-secondary btn-sm" style={{width:"100%"}} onClick={() => { authAPI.logout(); setLoggedIn(false); setIsAdmin(false); setProfile(false); }}>Sign Out</button></>'
+  );
 const frontendHelperJS = `
 const API_BASE = window.location.origin + "/api";
 const getToken = () => localStorage.getItem("jc_token");
@@ -331,10 +416,16 @@ function authHeaders(extra) {
   return { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}), ...extra };
 }
 async function apiFetch(url, opts) {
-  const res = await fetch(API_BASE + url, opts);
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || "Request failed");
-  return json;
+  try {
+    const res = await fetch(API_BASE + url, opts);
+    const text = await res.text();
+    let json;
+    try { json = text ? JSON.parse(text) : {}; } catch (e) { json = { error: text || (res.status + ' ' + res.statusText) }; }
+    if (!res.ok) throw new Error(json.error || ('Request failed (' + res.status + ')'));
+    return json;
+  } catch (e) {
+    throw new Error(e.message || 'Network error');
+  }
 }
 
 const authAPI = {
@@ -345,6 +436,9 @@ const authAPI = {
   async signup(name, email, password, phone) {
     const d = await apiFetch("/auth/signup", { method:"POST", headers:authHeaders(), body:JSON.stringify({name,email,password,phone}) });
     setToken(d.token); return d;
+  },
+  async changePassword(oldPassword, newPassword) {
+    return apiFetch("/auth/change-password", { method: "POST", headers: authHeaders(), body: JSON.stringify({ oldPassword, newPassword }) });
   },
   logout() { clearToken(); }
 };
@@ -388,7 +482,8 @@ const contactAPI = {
 const studentsAPI = {
   list()     { return apiFetch("/students", { headers:authHeaders() }); },
   stats()    { return apiFetch("/students/stats", { headers:authHeaders() }); },
-  delete(id) { return apiFetch("/students/"+id, { method:"DELETE", headers:authHeaders() }); }
+  delete(id) { return apiFetch("/students/"+id, { method:"DELETE", headers:authHeaders() }); },
+  approve(id) { return apiFetch("/students/"+id+"/approve", { method:"POST", headers:authHeaders() }); }
 };
 `;
 const compiledFrontendJS = babel.transformSync(frontendHelperJS + "\n" + frontendJSX, {
@@ -456,7 +551,8 @@ app.get("*", (req, res) => res.send(HTML));
 app.listen(PORT, async () => {
   console.log("\n✅ JC Resource Lab is running!");
   console.log("🌐 Open in browser: http://localhost:" + PORT);
-  console.log("🔐 Admin login:     admin@jcrl.com  /  admin123");
+  // Demo admin credentials (for local/dev only)
+  console.log("🔐 Admin login: admin@jcrl.com  /  admin123");
   console.log("📦 Supabase:        " + (process.env.SUPABASE_URL || "⚠️  Not set — fill in .env"));
   console.log("\n");
 

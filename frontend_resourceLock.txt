@@ -1,0 +1,39 @@
+rs.stream = stream;
+    resourcesAPI.list(filters).then(res => {
+      const all = res.resources || [];
+      const grouped = { notes: [], prev_papers: [], practice: [], passing: [], modules: [] };
+      all.forEach(r => { if (grouped[r.type] !== undefined) grouped[r.type].push(r); });
+      setLiveResources(grouped);
+    }).catch(() => setLiveResources(null));
+  }, [subject, cls, board, stream]);
+  const resourcesToShow = liveResources !== null ? liveResources : MOCK_RESOURCES;
+
+  const isLocked = (item) => {
+    // Check if title contains "Chapter 3" or higher number to require login
+    const match = item.title.match(/Chapter\s*(\d+)/i);
+    if (match) {
+      const chNum = parseInt(match[1], 10);
+      if (chNum >= 3 && !loggedIn) return true;
+    }
+    return false;
+  };
+
+  const LockedOverlay = () => (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px 16px",background:"var(--bg3)",borderRadius:"var(--radius-sm)",border:"2px dashed var(--card-border)",textAlign:"center",gap:10}}>
+      <div style={{width:44,height:44,background:"var(--accent-light)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div style={{fontWeight:700,fontSize:"0.95rem",color:"var(--text)"}}>Login Required</div>
+      <div style={{fontSize:"0.82rem",color:"var(--text2)"}}>Chapter 3 and beyond require a free account</div>
+      <button className="btn btn-primary btn-sm" onClick={() => setModal("signup")} style={{marginTop:4}}>Sign Up Free</button>
+    </div>
+  );
+
+  return (
+    <div className="page">
+      <BackBar nav={nav} goBack={goBack} goHome={goHome}/>
+      <div className="page-header">
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:8}}>
+          {board && <span className="badge badge-blue">{board}</span>}
+          {cls && <span className="badge badge-orange">Class {cls}</span>}
+          {strea

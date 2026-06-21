@@ -1,0 +1,11 @@
+{goHome}><Icon name="home" size={14}/>Home</button>
+      </div>
+      <div className="admin-layout">
+        <div className="admin-sidebar">
+          <div style={{padding:"16px 8px"}}>
+            {tabs.map(t => (
+              <div key={t.key} className={`admin-nav-item ${adminTab===t.key?"active":""}`} onClick={() => setAdminTab(t.key)}
+                style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <span style={{display:"flex",alignItems:"center",gap:8}}><Icon name={t.icon} size={18}/>{t.label}</span>
+                {t.count !== undefined && (
+                  <span style={{background:adminTab===t.key?"rgba(201,162,39,0.3)":"var(--bg3)",color:adminTab===t.key?"#c9a227":"var(--text3)",borderRadius:20,padding:"1px 8px",fontSize:"0.72rem",fo

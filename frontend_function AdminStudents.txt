@@ -1,0 +1,23 @@
+function AdminStudents({ students, setStudents }) {
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [search, setSearch] = useState("");
+  const filtered = students.filter(s =>
+    s.name.toLowerCase().includes(search.toLowerCase()) ||
+    s.email.toLowerCase().includes(search.toLowerCase())
+  );
+  return (
+    <>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12}}>
+        <h2 style={{fontFamily:"var(--font-display)",fontSize:"1.6rem"}}>Registered Students</h2>
+        <span className="badge badge-blue" style={{fontSize:"0.85rem",padding:"5px 14px"}}>{students.length} students</span>
+      </div>
+      <div className="search-bar" style={{marginBottom:16}}>
+        <Icon name="search" size={16} style={{color:"var(--text3)"}}/>
+        <input style={{border:"none",background:"transparent",outline:"none",flex:1,fontSize:"0.9rem"}}
+          placeholder="Search by name or email..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        {search && <button onClick={()=>setSearch("")} style={{border:"none",background:"none",cursor:"pointer",color:"var(--text3)"}}>✕</button>}
+      </div>
+      <div className="card">
+        {filtered.map((s,i) => (
+          <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 0",borderBottom:i<filtered.length-1?"1px solid var(--card-border)":"none"}}>
+            <div style={{width:38,height:38,borderRadius:9,background

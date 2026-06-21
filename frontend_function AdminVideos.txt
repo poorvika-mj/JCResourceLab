@@ -1,0 +1,36 @@
+function AdminVideos({ videos, setVideos }) {
+  const blank = { title:"", url:"", subject:"Mathematics", class:"9th", board:"", chapter:"" };
+  const [form, setForm] = useState(blank);
+  const [adding, setAdding] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  // Load videos from API on mount
+  useEffect(() => {
+    setLoading(true);
+    videosAPI.list().then(res => {
+      setVideos(res.videos || []);
+    }).catch(e => {
+      setError("Could not load videos: " + e.message);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const needs910Board = form.class === "9th" || form.class === "10th";
+
+  const normalizeUrl = (url) => {
+    if (url.includes("youtu.be/")) return "https://www.youtube.com/watch?v=" + url.split("youtu.be/")[1].split("?")[0];
+    if (url.includes("/embed/")) return "https://www.youtube.com/watch?v=" + url.split("/embed/")[1].split("?")[0];
+    return url;
+  };
+
+  const save = async () => {
+    if (!form.title || !form.url) return;
+    if (needs910Board && !form.board) { setError("Please select State or CBSE board for Class 9th/10th."); return; }
+    setError(""); setSaving(true);
+    const payload = { ...form, url: normalizeUrl(form.url), board: needs910Board ? form.board : null };
+    try {
+      if (editId) {
+        const res = await vid

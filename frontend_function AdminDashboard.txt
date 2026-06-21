@@ -1,0 +1,24 @@
+function AdminDashboard({ notes, papers, chapters, videos, students, allItems, setNotes, setPapers, setAdminTab }) {
+  const [editItem, setEditItem] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  const stats = [
+    { num:notes.length,    label:"Total Notes",       icon:"book",   color:"#6366f1", tab:"notes" },
+    { num:papers.filter(p=>p.title.toLowerCase().includes("prev")||p.title.toLowerCase().includes("paper")||true).length, label:"Question Banks / Papers", icon:"file", color:"#f59e0b", tab:"papers" },
+    { num:chapters.length, label:"Total Chapters",    icon:"layers", color:"#10b981", tab:"chapters" },
+    { num:videos.length,   label:"Video Links",       icon:"video",  color:"#ef4444", tab:"videos" },
+    { num:students.length, label:"Total Students",    icon:"user",   color:"#3b6ee8", tab:"students" },
+    { num:notes.length+papers.length+videos.length, label:"Total Resources", icon:"star", color:"#ec4899", tab:null },
+  ];
+
+  const recent = [...allItems].sort((a,b) => b.id - a.id).slice(0,8);
+
+  const startEdit = (item) => {
+    setEditItem(item);
+    setEditForm({title:item.title, class:item.class, subject:item.subject, board:item.board, chapter:item.chapter||""});
+  };
+
+  const saveEdit = () => {
+    if (editItem.type === "Notes") setNotes(prev => prev.map(x => x.id===editItem.id ? {...x,...editForm} : x));
+    if (editItem.type === "Papers") setPapers(prev => prev.map(x => x.id===e
